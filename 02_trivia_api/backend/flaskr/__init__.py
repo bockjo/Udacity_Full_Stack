@@ -71,15 +71,16 @@ def create_app(test_config=None):
   
   @app.route("/categories/<int:category_id>/questions",methods = ["GET"])
   def retrieve_question(category_id):
+    
     categories = Category.query.order_by("id").all()
     categories = {category.id:category.type  for category in categories}
-
-    selection = Question.query.filter(Question.category == category_id).all()
+    
+    selection = Question.query.filter(Question.category == str(category_id)).all()
     current_questions = paginate(request,selection,QUESTIONS_PER_PAGE)
     
     if len(current_questions)==0:
       abort(404)
-    
+  
     return(jsonify({
         "success":True,
         "questions":current_questions,
@@ -118,12 +119,12 @@ def create_app(test_config=None):
   def add_question():
     body = request.get_json()
 
-    question = body.get("question", None)
-    answer = body.get("answer",None)
-    difficulty = int(body.get("difficulty",None))
-    category = int(body.get("category",None))
-    
     try:
+      question = body.get("question",None)
+      answer = body.get("answer",None)
+      difficulty = int(body.get("difficulty",None))
+      category = int(body.get("category",None))
+    
       new_q = Question(question=question,answer=answer,difficulty=difficulty,category=category) 
       new_q.insert()  
     except:
@@ -144,7 +145,9 @@ def create_app(test_config=None):
   @app.route("/questions/search",methods = ["POST"])
   def search_question():
     body = request.get_json()
-    search_term = body.get("searchTerm",None)
+    search_term = body.get("searchTerm")
+    if not search_term:
+      abort(400)
 
     selection = Question.query.filter(Question.question.ilike(f"%{search_term}%")).all()
     current_questions = paginate(request,selection,QUESTIONS_PER_PAGE)
